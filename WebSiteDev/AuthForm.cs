@@ -53,12 +53,11 @@ namespace WebSiteDev
                 return;
             }
 
-            if (captchaRequired && textBox3.Text.ToUpper() != captchaText)
+            if (captchaRequired && textBox3.Text != captchaText)
             {
                 MessageBox.Show("Неверно введена CAPTCHA!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 CaptchaToImage();
                 textBox3.Clear();
-
                 return;
             }
 
@@ -181,7 +180,7 @@ namespace WebSiteDev
         private void CaptchaToImage()
         {
             Random random = new Random();
-            string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
             captchaText = "";
 
             for (int i = 0; i < 5; i++)
@@ -353,13 +352,19 @@ namespace WebSiteDev
 
         private void textBox3_KeyPress(object sender, KeyPressEventArgs e)
         {
+            string allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
+            if (allowedChars.IndexOf(e.KeyChar) == -1 && !char.IsControl(e.KeyChar))
+            {
+                e.Handled = true;
+            }
         }
 
         private void textBox3_TextChanged(object sender, EventArgs e)
         {
-
+            textBox3.SelectionStart = textBox3.Text.Length;
         }
+
         private string GetSha256(string text)
         {
             using (SHA256 sha = SHA256.Create())
