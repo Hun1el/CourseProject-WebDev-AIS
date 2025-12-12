@@ -212,6 +212,7 @@
             this.Name = "OrderProductForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Просмотр состава заказа";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.OrderProductForm_FormClosing);
             this.Load += new System.EventHandler(this.OrderProductForm_Load);
             this.panel1.ResumeLayout(false);
             this.panel2.ResumeLayout(false);

@@ -95,5 +95,15 @@ namespace WebSiteDev.AddForm
                 MessageBox.Show("Ошибка при добавлении статуса:\n" + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private void AddStatusForm_Load(object sender, EventArgs e)
+        {
+            Inactivity.OnFormLoad(this);
+        }
+
+        private void AddStatusForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Inactivity.OnFormClosing(this);
+        }
     }
 }

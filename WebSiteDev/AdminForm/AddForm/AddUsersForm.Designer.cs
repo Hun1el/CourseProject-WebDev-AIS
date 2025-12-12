@@ -265,6 +265,8 @@
             this.Name = "AddUsersForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Добавление пользователя";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.AddUsersForm_FormClosing);
+            this.Load += new System.EventHandler(this.AddUsersForm_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

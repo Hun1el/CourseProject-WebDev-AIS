@@ -33,6 +33,8 @@ namespace WebSiteDev
         /// </summary>
         private void MainForm_Load(object sender, EventArgs e)
         {
+            Inactivity.OnFormLoad(this);
+
             label2.Text = $"Сотрудник: {fullName}";
             label3.Text = $"Доступ: {roleName}";
         }
@@ -252,7 +254,7 @@ namespace WebSiteDev
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-
+            Inactivity.OnFormClosing(this);
         }
     }
 }

@@ -247,6 +247,7 @@
             this.Name = "AddClientsForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Добавление клиента";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.AddClientsForm_FormClosing);
             this.Load += new System.EventHandler(this.AddClientsForm_Load);
             this.ResumeLayout(false);
             this.PerformLayout();

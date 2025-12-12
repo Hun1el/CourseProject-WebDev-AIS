@@ -457,5 +457,15 @@ namespace WebSiteDev.AddForm
                 }
             }
         }
+
+        private void AddProductForm_Load(object sender, EventArgs e)
+        {
+            Inactivity.OnFormLoad(this);
+        }
+
+        private void AddProductForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Inactivity.OnFormLoad(this);
+        }
     }
 }

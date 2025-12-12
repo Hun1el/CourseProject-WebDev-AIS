@@ -291,5 +291,15 @@ namespace WebSiteDev.AddForm
             string shufflepass = Shuffle(Convert.ToString(password));
             textBox6.Text = shufflepass;
         }
+
+        private void AddUsersForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Inactivity.OnFormClosing(this);
+        }
+
+        private void AddUsersForm_Load(object sender, EventArgs e)
+        {
+            Inactivity.OnFormLoad(this);
+        }
     }
 }

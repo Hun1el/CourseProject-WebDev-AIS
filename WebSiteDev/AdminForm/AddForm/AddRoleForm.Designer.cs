@@ -98,6 +98,8 @@
             this.Name = "AddRoleForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Добавление роли";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.AddRoleForm_FormClosing);
+            this.Load += new System.EventHandler(this.AddRoleForm_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 

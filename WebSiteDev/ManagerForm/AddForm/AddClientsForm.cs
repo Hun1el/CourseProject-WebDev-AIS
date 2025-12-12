@@ -17,6 +17,8 @@ namespace WebSiteDev.AddForm
 
         private void AddClientsForm_Load(object sender, EventArgs e)
         {
+            Inactivity.OnFormLoad(this);
+
             comboBox1.SelectedIndex = 0;
         }
 
@@ -177,6 +179,11 @@ namespace WebSiteDev.AddForm
                 // Обработка исключений при работе с БД
                 MessageBox.Show("Ошибка при добавлении клиента:\n" + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void AddClientsForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Inactivity.OnFormClosing(this);
         }
     }
 }

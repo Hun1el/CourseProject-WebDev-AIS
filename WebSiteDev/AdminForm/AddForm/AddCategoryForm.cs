@@ -92,5 +92,15 @@ namespace WebSiteDev.AddForm
                 MessageBox.Show("Ошибка при добавлении категории:\n" + Ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private void AddCategoryForm_Load(object sender, EventArgs e)
+        {
+            Inactivity.OnFormLoad(this);
+        }
+
+        private void AddCategoryForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Inactivity.OnFormClosing(this);
+        }
     }
 }

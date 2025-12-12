@@ -98,6 +98,8 @@
             this.Name = "AddCategoryForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Добавление категории";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.AddCategoryForm_FormClosing);
+            this.Load += new System.EventHandler(this.AddCategoryForm_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 

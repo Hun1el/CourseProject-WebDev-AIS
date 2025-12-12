@@ -27,6 +27,8 @@ namespace WebSiteDev
 
         private void BucketForm_Load(object sender, EventArgs e)
         {
+            Inactivity.OnFormLoad(this);
+
             DateTime dateTimeNow = DateTime.Now;
             textBox1.Text = dateTimeNow.ToString("yyyy.MM.dd");
             dateTimePicker1.Value = dateTimeNow.AddDays(7);
@@ -697,6 +699,11 @@ namespace WebSiteDev
                 LoadCartItems();
                 UpdateTotal();
             }
+        }
+
+        private void BucketForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Inactivity.OnFormClosing(this);
         }
     }
 }

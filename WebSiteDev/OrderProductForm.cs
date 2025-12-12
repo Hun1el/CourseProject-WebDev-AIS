@@ -24,6 +24,8 @@ namespace WebSiteDev
 
         private void OrderProductForm_Load(object sender, EventArgs e)
         {
+            Inactivity.OnFormLoad(this);
+
             LoadOrderProducts();
         }
 
@@ -312,6 +314,11 @@ namespace WebSiteDev
         private void button1_Click(object sender, EventArgs e)
         {
             this.Close();
+        }
+
+        private void OrderProductForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Inactivity.OnFormClosing(this);
         }
     }
 }

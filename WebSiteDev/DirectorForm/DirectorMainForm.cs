@@ -20,6 +20,8 @@ namespace WebSiteDev.ManagerForm
 
         private void DirectorMainForm_Load(object sender, EventArgs e)
         {
+            Inactivity.OnFormLoad(this);
+
             label2.Text = $"Сотрудник: {fullName}";
             label3.Text = $"Доступ: {roleName}";
         }
@@ -173,7 +175,7 @@ namespace WebSiteDev.ManagerForm
 
         private void DirectorMainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-
+            Inactivity.OnFormClosing(this);
         }
     }
 }

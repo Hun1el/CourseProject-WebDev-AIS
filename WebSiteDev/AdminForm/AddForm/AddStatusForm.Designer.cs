@@ -98,6 +98,8 @@
             this.Name = "AddStatusForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Добавление статуса";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.AddStatusForm_FormClosing);
+            this.Load += new System.EventHandler(this.AddStatusForm_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
