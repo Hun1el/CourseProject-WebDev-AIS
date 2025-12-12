@@ -1,19 +1,12 @@
 ﻿using MySql.Data.MySqlClient;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace WebSiteDev
 {
     /// <summary>
-    /// Форма настроек подключения к базе данных
-    /// Позволяет указать хост, пользователя, пароль и имя БД
+    /// Форма настроек подключения к базе данных и времени неактивности
+    /// Позволяет указать хост, пользователя, пароль, имя БД и время блокировки
     /// </summary>
     public partial class SettingsForm : Form
     {
@@ -27,7 +20,7 @@ namespace WebSiteDev
         }
 
         /// <summary>
-        /// Загружает настройки подключения из application settings
+        /// Загружает настройки подключения и время неактивности из application settings
         /// </summary>
         private void LoadSettings()
         {
@@ -35,6 +28,7 @@ namespace WebSiteDev
             textBox2.Text = Properties.Settings.Default.DbUser;
             textBox3.Text = Properties.Settings.Default.DbPassword;
             textBox4.Text = Properties.Settings.Default.DbName;
+            textBox5.Text = Properties.Settings.Default.InactivityTime.ToString();
         }
 
         /// <summary>
@@ -52,7 +46,7 @@ namespace WebSiteDev
         }
 
         /// <summary>
-        /// Кнопка "Сохранить" - сохраняет все параметры подключения
+        /// Кнопка "Сохранить" - сохраняет все параметры подключения и время неактивности
         /// </summary>
         private void button1_Click(object sender, EventArgs e)
         {
@@ -65,14 +59,25 @@ namespace WebSiteDev
                 return;
             }
 
-            // Сохраняем настройки в application settings
+            // Валидируем время неактивности (если пусто - 30 сек, если > 1800 - 1800 сек)
+            int inactivityTimeout = ValidateInactivityTimeout(textBox5.Text);
+
+            // Сохраняем все настройки в application settings
             Properties.Settings.Default.DbHost = textBox1.Text;
             Properties.Settings.Default.DbUser = textBox2.Text;
             Properties.Settings.Default.DbPassword = textBox3.Text;
             Properties.Settings.Default.DbName = textBox4.Text;
+            Properties.Settings.Default.InactivityTime = inactivityTimeout;
             Properties.Settings.Default.Save();
 
-            MessageBox.Show("Все настройки сохранены!", "Сохранение настроек", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // Обновляем время неактивности в работающей системе блокировки
+            BlockForms blockForms = Program.GetBlockForms();
+            if (blockForms != null)
+            {
+                blockForms.UpdateTimeout(inactivityTimeout);
+            }
+
+            MessageBox.Show($"Все настройки сохранены!\nВремя неактивности: {inactivityTimeout} сек", "Сохранение настроек", MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.Close();
         }
 
@@ -168,21 +173,80 @@ namespace WebSiteDev
 
                 default:
                     // Для неизвестных ошибок выводим код и описание
-                    errorMessage = $"Ошибка базы данных (код: {ex.Number}):\n{ex.Message}";
+                    errorMessage = string.Format("Ошибка базы данных (код: {0}):\n{1}", ex.Number, ex.Message);
                     break;
             }
 
             MessageBox.Show(errorMessage, "Ошибка подключения", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
+        /// <summary>
+        /// Валидирует время неактивности из поля ввода
+        /// Если пусто - устанавливает 30 сек по умолчанию
+        /// Если меньше 1 или больше 1800 - показывает предупреждение и выставляет граничное значение
+        /// </summary>
+        private int ValidateInactivityTimeout(string input)
+        {
+            int timeout = 30;
+
+            // Если поле пусто - возвращаем 30 по умолчанию
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return timeout;
+            }
+
+            // Пытаемся преобразовать строку в число
+            if (int.TryParse(input, out int parsedValue))
+            {
+                // Проверяем минимальное значение
+                if (parsedValue < 1)
+                {
+                    MessageBox.Show("Время неактивности должно быть минимум 1 секунда.\nУстановлено 30 секунд по умолчанию.", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    textBox5.Text = "30";
+                    return 30;
+                }
+
+                // Проверяем максимальное значение (1800 сек = 30 минут)
+                if (parsedValue > 1800)
+                {
+                    MessageBox.Show("Время неактивности не может быть больше 1800 секунд (30 минут).\nУстановлено 1800 секунд.", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    textBox5.Text = "1800";
+                    return 1800;
+                }
+
+                // Значение корректное
+                timeout = parsedValue;
+            }
+            else
+            {
+                // Пользователь ввёл не число
+                MessageBox.Show("Введите корректное число!\nУстановлено 30 секунд по умолчанию.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                textBox5.Text = "30";
+                return 30;
+            }
+
+            return timeout;
+        }
+
+        /// <summary>
+        /// Загрузка формы - регистрируем её для мониторинга активности
+        /// </summary>
         private void SettingsForm_Load(object sender, EventArgs e)
         {
             Inactivity.OnFormLoad(this);
         }
 
+        /// <summary>
+        /// Закрытие формы - удаляем её из мониторинга активности
+        /// </summary>
         private void SettingsForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             Inactivity.OnFormClosing(this);
+        }
+
+        private void textBox5_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            InputRest.OnlyNumbers(e);
         }
     }
 }
