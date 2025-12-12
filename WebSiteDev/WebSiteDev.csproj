@@ -108,6 +108,7 @@
     <Compile Include="AdminForm\UsersControl.Designer.cs">
       <DependentUpon>UsersControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Data\BlockForms.cs" />
     <Compile Include="Data\DataSecurity.cs" />
     <Compile Include="Doc\CheckWord.cs" />
     <Compile Include="Doc\ExcelReport.cs" />
