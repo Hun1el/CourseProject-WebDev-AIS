@@ -4,10 +4,6 @@ using System.Windows.Forms;
 
 namespace WebSiteDev
 {
-    /// <summary>
-    /// Контрол-карточка товара с отображением информации и возможностью редактирования
-    /// Поддерживает два режима просмотр (для администраторов и менеджеров) и редактирование
-    /// </summary>
     public partial class ProductCard : UserControl
     {
         // События для взаимодействия с родительским контролом
@@ -156,9 +152,6 @@ namespace WebSiteDev
             HideEditMode();
         }
 
-        /// <summary>
-        /// Переходит в режим редактирования - показывает поля ввода для изменения данных товара
-        /// </summary>
         public void ShowEditMode(DataManipulation dataManipulation)
         {
             // Сохраняем оригинальный путь изображения для возможности отката
@@ -265,17 +258,11 @@ namespace WebSiteDev
             }
         }
 
-        /// <summary>
-        /// Получает контрол изображения для управления фото товара
-        /// </summary>
         public ImageControl GetImageControl()
         {
             return imageControl1;
         }
 
-        /// <summary>
-        /// Обновляет состояние кнопки "Добавить в корзину" - отключает если товар уже в корзине
-        /// </summary>
         public void UpdateAddToCartButtonState(bool isProductInCart, string userRole)
         {
             if (userRole != "Менеджер")
@@ -290,9 +277,6 @@ namespace WebSiteDev
             }
         }
 
-        /// <summary>
-        /// Правый клик на карточку - добавляет товар в корзину
-        /// </summary>
         private void ProductCard_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
@@ -304,17 +288,11 @@ namespace WebSiteDev
             }
         }
 
-        /// <summary>
-        /// Перенаправляет событие клика с изображения на карточку
-        /// </summary>
         private void PictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
             ProductCard_MouseDown(this, e);
         }
 
-        /// <summary>
-        /// Ограничивает ввод в поле цены только цифрами и не позволяет начинать с нуля
-        /// </summary>
         private void textBox3_KeyPress(object sender, KeyPressEventArgs e)
         {
             InputRest.OnlyNumbers(e);
@@ -326,25 +304,16 @@ namespace WebSiteDev
             }
         }
 
-        /// <summary>
-        /// При вводе названия товара - делает первую букву заглавной
-        /// </summary>
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
             InputRest.FirstLetter(textBox1);
         }
 
-        /// <summary>
-        /// При вводе описания товара - делает первую букву заглавной
-        /// </summary>
         private void textBox2_TextChanged(object sender, EventArgs e)
         {
             InputRest.FirstLetter(textBox2);
         }
 
-        /// <summary>
-        /// Ограничивает ввод копеек только цифрами и максимум 2 цифры (00-99)
-        /// </summary>
         private void numericUpDown1_KeyPress(object sender, KeyPressEventArgs e)
         {
             NumericUpDown nud = sender as NumericUpDown;
@@ -376,9 +345,6 @@ namespace WebSiteDev
             }
         }
 
-        /// <summary>
-        /// Обработка правого клика на кнопку описания - отключает контекстное меню
-        /// </summary>
         private void button5_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)

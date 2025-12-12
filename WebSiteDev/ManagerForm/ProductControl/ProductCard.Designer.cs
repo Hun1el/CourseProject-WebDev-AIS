@@ -6,10 +6,14 @@
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                if (imageControl1 != null)
+                {
+                    imageControl1.Dispose();
+                }
             }
+
             base.Dispose(disposing);
         }
 

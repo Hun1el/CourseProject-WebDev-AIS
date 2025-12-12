@@ -65,9 +65,6 @@ namespace WebSiteDev.ManagerForm
             currentControl = control;
         }
 
-        /// <summary>
-        /// Публичный метод для выбора кнопки из других форм
-        /// </summary>
         public void SelectButtonPublic(Button button)
         {
             SelectButton(button);
@@ -84,7 +81,7 @@ namespace WebSiteDev.ManagerForm
                 return;
             }
 
-            LoadControl(new ManagerForm.ClientsControl());
+            LoadControl(new ClientsControl());
             this.Text = "Список клиентов";
             SelectButton(button1);
         }
@@ -100,7 +97,7 @@ namespace WebSiteDev.ManagerForm
                 return;
             }
 
-            LoadControl(new ManagerForm.ProductControl(roleName, CurrentUserID, fullName));
+            LoadControl(new ProductControl(roleName, CurrentUserID, fullName));
             this.Text = "Список услуг";
             SelectButton(button2);
         }
@@ -116,7 +113,7 @@ namespace WebSiteDev.ManagerForm
                 return;
             }
 
-            LoadControl(new ManagerForm.OrderControl(roleName, CurrentUserID, fullName));
+            LoadControl(new OrderControl(roleName, CurrentUserID, fullName));
             this.Text = "Список заказов";
             SelectButton(button3);
         }
@@ -229,6 +226,16 @@ namespace WebSiteDev.ManagerForm
         private void ManagerMainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             Inactivity.OnFormClosing(this);
+
+            // Очищаем контрол перед закрытием
+            if (currentControl != null)
+            {
+                currentControl.Dispose();
+                currentControl = null;
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
         }
     }
 }

@@ -22,26 +22,17 @@ namespace WebSiteDev
             InitializeComponent();
         }
 
-        /// <summary>
-        /// Получает путь к папке с изображениями в AppData
-        /// </summary>
         private string GetImagesFolderPath()
         {
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             return Path.Combine(appData, "WebShop", "Images");
         }
 
-        /// <summary>
-        /// Показывает или скрывает кнопку для изменения изображения
-        /// </summary>
         public void ShowChangeButton(bool show)
         {
             button1.Visible = show;
         }
 
-        /// <summary>
-        /// Инициализирует контрол - загружает текущее изображение товара
-        /// </summary>
         public void InitializeImage(string currentImagePath)
         {
             CurrentImagePath = currentImagePath;
@@ -58,9 +49,6 @@ namespace WebSiteDev
             }
         }
 
-        /// <summary>
-        /// Кнопка изменить - открывает диалог выбора файла и загружает новое изображение
-        /// </summary>
         private void button1_Click(object sender, EventArgs e)
         {
             using (OpenFileDialog ofd = new OpenFileDialog())
@@ -118,6 +106,14 @@ namespace WebSiteDev
 
                         // Загружаем выбранное изображение во временное хранилище
                         selectedImagePath = sourcePath;
+
+                        // Освобождаем старое изображение
+                        if (pictureBox1.Image != null)
+                        {
+                            pictureBox1.Image.Dispose();
+                            pictureBox1.Image = null;
+                        }
+
                         Image tempImage = Image.FromFile(sourcePath);
                         pictureBox1.Image = tempImage;
                     }
@@ -240,9 +236,6 @@ namespace WebSiteDev
             }
         }
 
-        /// <summary>
-        /// Отменяет редактирование - восстанавливает оригинальное изображение
-        /// </summary>
         public void CancelEdit()
         {
             selectedImagePath = null;
@@ -250,15 +243,25 @@ namespace WebSiteDev
             // Восстанавливаем оригинальное изображение если оно было сохранено
             if (originalImage != null)
             {
+                // Освобождаем старое изображение перед присвоением нового
+                if (pictureBox1.Image != null)
+                {
+                    pictureBox1.Image.Dispose();
+                    pictureBox1.Image = null;
+                }
                 pictureBox1.Image = new Bitmap(originalImage);
             }
         }
 
-        /// <summary>
-        /// Загружает изображение товара из папки или показывает изображение по умолчанию
-        /// </summary>
         public void LoadImage(string photoName)
         {
+            // Освобождаем старое изображение
+            if (pictureBox1.Image != null)
+            {
+                pictureBox1.Image.Dispose();
+                pictureBox1.Image = null;
+            }
+
             if (string.IsNullOrEmpty(photoName))
             {
                 return;
@@ -291,17 +294,11 @@ namespace WebSiteDev
             }
         }
 
-        /// <summary>
-        /// Перенаправляет событие клика с PictureBox на контрол
-        /// </summary>
         private void PictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
             this.OnMouseDown(e);
         }
 
-        /// <summary>
-        /// Обработчик события клика на контрол
-        /// </summary>
         private void ImageControl_MouseDown(object sender, MouseEventArgs e)
         {
 

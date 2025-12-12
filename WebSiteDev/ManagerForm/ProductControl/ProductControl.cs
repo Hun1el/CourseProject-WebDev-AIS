@@ -8,9 +8,6 @@ using WebSiteDev.AddForm;
 
 namespace WebSiteDev.ManagerForm
 {
-    /// <summary>
-    /// Контрол для просмотра и управления товарами/услугами с поддержкой корзины заказов
-    /// </summary>
     public partial class ProductControl : UserControl
     {
         private DataManipulation dataManipulation;
@@ -93,11 +90,21 @@ namespace WebSiteDev.ManagerForm
         /// </summary>
         private void GetData()
         {
+            // Очищаем старый DataManipulation если он есть
+            if (dataManipulation != null)
+            {
+                if (dataManipulation.table != null)
+                {
+                    dataManipulation.table.Clear();
+                    dataManipulation.table.Dispose();
+                }
+                dataManipulation = null;
+            }
+
             using (MySqlConnection con = new MySqlConnection(Data.GetConnectionString()))
             {
                 con.Open();
 
-                // Получаем все товары с их категориями
                 MySqlDataAdapter da = new MySqlDataAdapter(@"SELECT p.ProductID, p.ProductName, p.ProductDescription, p.ProductPhoto,
                     c.CategoryName AS Category, p.BasePrice, p.CategoryID FROM Product p JOIN Category c ON p.CategoryID = c.CategoryID", con);
 
@@ -107,31 +114,42 @@ namespace WebSiteDev.ManagerForm
                 dataManipulation = new DataManipulation(dt);
                 dataManipulation.FillComboBoxWithCategories(comboBox1, "Все категории");
 
-                // Показываем количество товаров
                 MySqlCommand count = new MySqlCommand("SELECT COUNT(*) FROM Product", con);
                 label1.Text = "Количество записей: " + count.ExecuteScalar();
             }
         }
 
-        /// <summary>
-        /// Перезагружает данные товаров и применяет фильтры
-        /// </summary>
         private void RefreshData()
         {
+            // Отписываем события перед удалением карточек
             foreach (Control control in flowPanel.Controls)
             {
                 if (control is ProductCard card)
                 {
+                    card.EditButtonClicked -= Card_EditButtonClicked;
+                    card.DeleteButtonClicked -= Card_DeleteButtonClicked;
+                    card.AddToCartClicked -= Card_AddToCartClicked;
+                    card.CancelEditClicked -= Card_CancelEditClicked;
                     card.Dispose();
                 }
             }
             flowPanel.Controls.Clear();
 
+            // Очищаем старый DataManipulation
+            if (dataManipulation != null)
+            {
+                if (dataManipulation.table != null)
+                {
+                    dataManipulation.table.Clear();
+                    dataManipulation.table.Dispose();
+                }
+                dataManipulation = null;
+            }
+
             using (MySqlConnection con = new MySqlConnection(Data.GetConnectionString()))
             {
                 con.Open();
 
-                // Получаем все товары с их категориями
                 MySqlDataAdapter da = new MySqlDataAdapter(@"SELECT p.ProductID, p.ProductName, p.ProductDescription, p.ProductPhoto,
             c.CategoryName AS Category, p.BasePrice, p.CategoryID FROM Product p JOIN Category c ON p.CategoryID = c.CategoryID", con);
 
@@ -140,20 +158,15 @@ namespace WebSiteDev.ManagerForm
 
                 dataManipulation = new DataManipulation(dt);
 
-                // Обновляем количество товаров
                 MySqlCommand count = new MySqlCommand("SELECT COUNT(*) FROM Product", con);
                 label1.Text = "Количество записей: " + count.ExecuteScalar();
             }
 
-            // Сбрасываем индекс загрузки и очищаем панель
             currentIndex = 0;
             flowPanel.Controls.Clear();
             LoadNextBatch();
         }
 
-        /// <summary>
-        /// Создаёт карточку товара с событиями и контекстным меню
-        /// </summary>
         private ProductCard CreateProductCard(DataRowView row)
         {
             ProductCard card = new ProductCard();
@@ -173,7 +186,6 @@ namespace WebSiteDev.ManagerForm
             bool isInCart = IsProductInCart(productID);
             card.UpdateAddToCartButtonState(isInCart, userRole);
 
-            // Подписываем на события карточки
             card.EditButtonClicked += Card_EditButtonClicked;
             card.DeleteButtonClicked += Card_DeleteButtonClicked;
             card.AddToCartClicked += Card_AddToCartClicked;
@@ -182,9 +194,6 @@ namespace WebSiteDev.ManagerForm
             return card;
         }
 
-        /// <summary>
-        /// Проверяет находится ли товар уже в корзине
-        /// </summary>
         private bool IsProductInCart(int productID)
         {
             foreach (var item in CurrentOrder.Items)
@@ -197,25 +206,16 @@ namespace WebSiteDev.ManagerForm
             return false;
         }
 
-        /// <summary>
-        /// Событие клика на кнопку редактирования карточки
-        /// </summary>
         private void Card_EditButtonClicked(object sender, EventArgs e)
         {
             StartEdit(sender as ProductCard);
         }
 
-        /// <summary>
-        /// Событие клика на кнопку удаления карточки
-        /// </summary>
         private void Card_DeleteButtonClicked(object sender, EventArgs e)
         {
             DeleteProduct(sender as ProductCard);
         }
 
-        /// <summary>
-        /// Обработка события добавления в корзину - поддерживает левый и правый клик
-        /// </summary>
         private void Card_AddToCartClicked(object sender, EventArgs e)
         {
             ProductCard card = sender as ProductCard;
@@ -247,9 +247,6 @@ namespace WebSiteDev.ManagerForm
             }
         }
 
-        /// <summary>
-        /// Добавляет товар в корзину с проверкой на дубли и лимиты
-        /// </summary>
         private void AddToCartDirect(ProductCard card)
         {
             if (card == null)
@@ -315,9 +312,6 @@ namespace WebSiteDev.ManagerForm
             UpdateOrderButtonVisibility();
         }
 
-        /// <summary>
-        /// Событие отмены редактирования карточки
-        /// </summary>
         private void Card_CancelEditClicked(object sender, EventArgs e)
         {
             ProductCard card = sender as ProductCard;
@@ -336,9 +330,6 @@ namespace WebSiteDev.ManagerForm
             card.HideEditMode();
         }
 
-        /// <summary>
-        /// Начинает редактирование товара - переводит карточку в режим редактирования
-        /// </summary>
         private void StartEdit(ProductCard card)
         {
             if (card == null)
@@ -374,9 +365,6 @@ namespace WebSiteDev.ManagerForm
             card.button3.Click += SaveProduct;
         }
 
-        /// <summary>
-        /// Сохраняет изменения товара в БД после редактирования
-        /// </summary>
         private void SaveProduct(object sender, EventArgs e)
         {
             object[] data = (sender as Button).Tag as object[];
@@ -517,9 +505,6 @@ namespace WebSiteDev.ManagerForm
             }
         }
 
-        /// <summary>
-        /// Валидирует введённые данные товара перед сохранением
-        /// </summary>
         private bool ValidateProductData(TextBox name, TextBox description, TextBox rubles, NumericUpDown kopecks, ComboBox category)
         {
             // Проверяем что все элементы переданы
@@ -574,9 +559,6 @@ namespace WebSiteDev.ManagerForm
             return true;
         }
 
-        /// <summary>
-        /// Получает ID категории по названию
-        /// </summary>
         private int GetCategoryID(string categoryName)
         {
             if (dataManipulation == null || string.IsNullOrEmpty(categoryName))
@@ -596,9 +578,6 @@ namespace WebSiteDev.ManagerForm
             return 0;
         }
 
-        /// <summary>
-        /// Обработчик контекстного меню - добавляет товар с правого клика в корзину
-        /// </summary>
         private void contextMenuStrip1_Click(object sender, EventArgs e)
         {
             if (selectedCard == null)
@@ -667,7 +646,7 @@ namespace WebSiteDev.ManagerForm
         }
 
         /// <summary>
-        /// Загружает следующую партию товаров при скроллинге (ленивая загрузка)
+        /// Ленивая загрузка
         /// </summary>
         private void LoadNextBatch()
         {
@@ -684,9 +663,6 @@ namespace WebSiteDev.ManagerForm
             flowPanel.ResumeLayout();
         }
 
-        /// <summary>
-        /// Инициализирует ленивую загрузку товаров
-        /// </summary>
         private void EnableLazyLoading()
         {
             currentIndex = 0;
@@ -717,9 +693,6 @@ namespace WebSiteDev.ManagerForm
             return "товаров";
         }
 
-        /// <summary>
-        /// Обновляет состояние кнопки просмотра заказа (видимость и текст с количеством)
-        /// </summary>
         public void UpdateOrderButtonVisibility()
         {
             if (button1 == null)
@@ -753,7 +726,7 @@ namespace WebSiteDev.ManagerForm
         }
 
         /// <summary>
-        /// Применяет фильтры и сортировку, перезагружает таблицу
+        /// Применяет фильтры и сортировку
         /// </summary>
         private void ApplyFilters()
         {
@@ -764,42 +737,27 @@ namespace WebSiteDev.ManagerForm
             LoadNextBatch();
         }
 
-        /// <summary>
-        /// При изменении поля поиска - переформатирует текст и применяет фильтры
-        /// </summary>
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
             InputRest.FirstLetter(textBox1);
             ApplyFilters();
         }
 
-        /// <summary>
-        /// Разрешает любые символы при вводе в поле поиска
-        /// </summary>
         private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
         {
             InputRest.AllowAll(e);
         }
 
-        /// <summary>
-        /// При изменении фильтра по категориям - применяет фильтры
-        /// </summary>
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             ApplyFilters();
         }
 
-        /// <summary>
-        /// При изменении сортировки - применяет фильтры
-        /// </summary>
         private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
             ApplyFilters();
         }
 
-        /// <summary>
-        /// Кнопка "Просмотр заказа" - открывает форму корзины
-        /// </summary>
         private void button1_Click(object sender, EventArgs e)
         {
             BucketForm bucketForm = new BucketForm(dataManipulation, CurrentUserID, CurrentUserName);
@@ -820,9 +778,6 @@ namespace WebSiteDev.ManagerForm
             EnableLazyLoading();
         }
 
-        /// <summary>
-        /// Кнопка "Свернуть панель" - уменьшает размер окна
-        /// </summary>
         private void button3_Click(object sender, EventArgs e)
         {
             Form parentForm = this.FindForm();
@@ -833,9 +788,6 @@ namespace WebSiteDev.ManagerForm
             update = true;
         }
 
-        /// <summary>
-        /// Кнопка "Сброс фильтров" - очищает фильтры и сортировку
-        /// </summary>
         private void button4_Click(object sender, EventArgs e)
         {
             dataManipulation.ResetFilters(comboSort: comboBox3, comboFilter: comboBox1, textSearch: textBox1);
@@ -865,9 +817,6 @@ namespace WebSiteDev.ManagerForm
             }
         }
 
-        /// <summary>
-        /// Обновляет состояние всех карточек товаров (отмечает какие в корзине)
-        /// </summary>
         public void RefreshProductCardStates()
         {
             foreach (Control control in flowPanel.Controls)
@@ -894,33 +843,6 @@ namespace WebSiteDev.ManagerForm
 
                 card.UpdateAddToCartButtonState(isInCart, userRole);
             }
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                // Освобождаем все изображения в карточках
-                foreach (Control control in flowPanel.Controls)
-                {
-                    if (control is ProductCard card)
-                    {
-                        card.Dispose();
-                    }
-                }
-                flowPanel.Controls.Clear();
-
-                if (dataManipulation != null)
-                {
-                    dataManipulation = null;
-                }
-
-                // Принудительная сборка мусора
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
-
-            base.Dispose(disposing);
         }
     }
 }

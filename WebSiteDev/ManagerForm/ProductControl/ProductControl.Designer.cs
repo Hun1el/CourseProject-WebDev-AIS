@@ -1,9 +1,36 @@
-﻿namespace WebSiteDev.ManagerForm
+﻿using System;
+using System.Windows.Forms;
+
+namespace WebSiteDev.ManagerForm
 {
     partial class ProductControl
     {
         private System.ComponentModel.IContainer components = null;
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                foreach (Control control in flowPanel.Controls)
+                {
+                    if (control is ProductCard card)
+                    {
+                        card.Dispose();
+                    }
+                }
+                flowPanel.Controls.Clear();
+
+                if (dataManipulation != null)
+                {
+                    dataManipulation = null;
+                }
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            base.Dispose(disposing);
+        }
 
         #region Component Designer generated code
 
