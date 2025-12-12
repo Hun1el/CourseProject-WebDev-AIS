@@ -227,10 +227,8 @@ namespace WebSiteDev
             {
                 this.Width = 895;
             }
-            if (pictureBox4.Image == null)
-            {
-                CaptchaToImage();
-            }
+
+            CaptchaToImage();
         }
 
         private void HideCaptcha()
