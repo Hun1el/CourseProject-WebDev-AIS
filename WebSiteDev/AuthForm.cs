@@ -56,7 +56,16 @@ namespace WebSiteDev
             if (captchaRequired && textBox3.Text != captchaText)
             {
                 MessageBox.Show("Неверно введена CAPTCHA!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                CaptchaToImage();
+                failedAttempts++;
+                if (failedAttempts >= 2)
+                {
+                    MessageBox.Show("Вход заблокирован на 10 секунд!", "Блокировка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    StartLockout();
+                }
+                else
+                {
+                    CaptchaToImage();
+                }
                 textBox3.Clear();
                 return;
             }
@@ -89,8 +98,8 @@ namespace WebSiteDev
                 {
                     con.Open();
                     string query = @"SELECT u.UserID, u.FirstName, u.Surname, u.MiddleName, r.RoleName 
-                             FROM Users u JOIN Role r ON u.RoleID = r.RoleID 
-                             WHERE u.UserLogin = @login AND u.UserPassword = @password LIMIT 1;";
+                     FROM Users u JOIN Role r ON u.RoleID = r.RoleID 
+                     WHERE u.UserLogin = @login AND u.UserPassword = @password LIMIT 1;";
 
                     MySqlCommand cmd = new MySqlCommand(query, con);
                     cmd.Parameters.AddWithValue("@login", login);
@@ -153,7 +162,7 @@ namespace WebSiteDev
                             }
                             else if (failedAttempts >= 2)
                             {
-                                MessageBox.Show("Вход заблокирован на 10 секунд!", "Блокировка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                MessageBox.Show("Неверный логин или пароль!\nВход заблокирован на 10 секунд!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                 StartLockout();
                             }
                             textBox1.Text = "";
@@ -257,6 +266,13 @@ namespace WebSiteDev
         {
             lockoutSeconds = 10;
             button1.Enabled = false;
+            button2.Enabled = false;
+            textBox1.Enabled = false;
+            textBox2.Enabled = false;
+            textBox3.Enabled = false;
+            pictureBox5.Enabled = false;
+            pictureBox2.Enabled = false;
+            pictureBox3.Enabled = false;
             lockoutTimer.Start();
         }
 
@@ -268,10 +284,17 @@ namespace WebSiteDev
             {
                 lockoutTimer.Stop();
                 button1.Enabled = true;
+                button2.Enabled = true;
+                textBox1.Enabled = true;
+                textBox2.Enabled = true;
+                textBox3.Enabled = true;
+                pictureBox2.Enabled = true;
+                pictureBox3.Enabled = true;
+                pictureBox5.Enabled = true;
                 button1.Text = "Вход";
-                failedAttempts = 0;
-                captchaRequired = false;
-                HideCaptcha();
+                CaptchaToImage();
+                textBox3.Clear();
+                textBox3.Focus();
             }
         }
 
