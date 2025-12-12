@@ -197,6 +197,7 @@
             this.pictureBox5.Size = new System.Drawing.Size(40, 37);
             this.pictureBox5.TabIndex = 22;
             this.pictureBox5.TabStop = false;
+            this.pictureBox5.Click += new System.EventHandler(this.pictureBox5_Click);
             // 
             // label6
             // 

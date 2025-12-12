@@ -1,5 +1,7 @@
 ﻿using MySql.Data.MySqlClient;
 using System;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
@@ -10,11 +12,19 @@ namespace WebSiteDev
     public partial class AuthForm : Form
     {
         private BlockForms blockForms;
+        private string captchaText;
+        private bool captchaRequired = false;
+        private int failedAttempts = 0;
+        private Timer lockoutTimer;
+        private int lockoutSeconds = 0;
 
         public AuthForm()
         {
             InitializeComponent();
             FolderPermissions.InitializeImagesFolder();
+            lockoutTimer = new Timer();
+            lockoutTimer.Interval = 1000;
+            lockoutTimer.Tick += LockoutTimer_Tick;
         }
 
         private void AuthForm_Load(object sender, EventArgs e)
@@ -22,10 +32,17 @@ namespace WebSiteDev
             blockForms = Program.GetBlockForms();
             blockForms.RegisterForm(this);
             blockForms.Start();
+            HideCaptcha();
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
+            if (lockoutTimer.Enabled)
+            {
+                MessageBox.Show("Вход заблокирован. Попробуйте через " + lockoutSeconds + " сек.", "Блокировка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             string login = textBox1.Text.Trim();
             string password = textBox2.Text;
             string hashedPassword = GetSha256(password);
@@ -36,24 +53,34 @@ namespace WebSiteDev
                 return;
             }
 
+            if (captchaRequired && textBox3.Text.ToUpper() != captchaText)
+            {
+                MessageBox.Show("Неверно введена CAPTCHA!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                CaptchaToImage();
+                textBox3.Clear();
+
+                return;
+            }
+
             string adminLogin = Properties.Settings.Default.AdminLogin;
             string adminPassword = Properties.Settings.Default.AdminPassword;
 
             if (login == adminLogin && password == adminPassword)
             {
+                failedAttempts = 0;
+                captchaRequired = false;
+                HideCaptcha();
                 blockForms.Stop();
-
                 MainForm adminForm = new MainForm("Администратор", "Администратор", 0);
                 blockForms.RegisterForm(adminForm);
                 this.Hide();
                 adminForm.ShowDialog();
                 this.Show();
                 blockForms.UnregisterForm(adminForm);
-
                 blockForms.Restart();
-
                 textBox1.Text = "";
                 textBox2.Text = "";
+
                 return;
             }
 
@@ -62,11 +89,9 @@ namespace WebSiteDev
                 try
                 {
                     con.Open();
-
                     string query = @"SELECT u.UserID, u.FirstName, u.Surname, u.MiddleName, r.RoleName 
                              FROM Users u JOIN Role r ON u.RoleID = r.RoleID 
-                             WHERE u.UserLogin = @login AND u.UserPassword = @password
-                             LIMIT 1;";
+                             WHERE u.UserLogin = @login AND u.UserPassword = @password LIMIT 1;";
 
                     MySqlCommand cmd = new MySqlCommand(query, con);
                     cmd.Parameters.AddWithValue("@login", login);
@@ -76,23 +101,24 @@ namespace WebSiteDev
                     {
                         if (reader.Read())
                         {
+                            failedAttempts = 0;
+                            captchaRequired = false;
+                            HideCaptcha();
+
                             int userID = Convert.ToInt32(reader["UserID"]);
-                            string fullName = string.Format("{0} {1} {2}",
-                                reader["Surname"],
-                                reader["FirstName"],
-                                reader["MiddleName"]);
+                            string fullName = reader["Surname"].ToString() + " " + reader["FirstName"].ToString() + " " + reader["MiddleName"].ToString();
                             string role = reader["RoleName"].ToString();
 
                             blockForms.Stop();
 
                             if (role == "Администратор")
                             {
-                                MainForm adminForm = new MainForm(fullName, role, userID);
-                                blockForms.RegisterForm(adminForm);
+                                MainForm mainForm = new MainForm(fullName, role, userID);
+                                blockForms.RegisterForm(mainForm);
                                 this.Hide();
-                                adminForm.ShowDialog();
+                                mainForm.ShowDialog();
                                 this.Show();
-                                blockForms.UnregisterForm(adminForm);
+                                blockForms.UnregisterForm(mainForm);
                             }
                             else if (role == "Менеджер")
                             {
@@ -114,71 +140,178 @@ namespace WebSiteDev
                             }
 
                             blockForms.Restart();
-
                             textBox1.Text = "";
                             textBox2.Text = "";
                         }
                         else
                         {
-                            MessageBox.Show("Неверный логин или пароль!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            failedAttempts++;
+                            if (failedAttempts == 1)
+                            {
+                                MessageBox.Show("Неверный логин или пароль!\nДля дальнейших попыток требуется ввод CAPTCHA.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                captchaRequired = true;
+                                ShowCaptcha();
+                            }
+                            else if (failedAttempts >= 2)
+                            {
+                                MessageBox.Show("Вход заблокирован на 10 секунд!", "Блокировка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                StartLockout();
+                            }
                             textBox1.Text = "";
                             textBox2.Text = "";
+                            textBox3.Clear();
                         }
                     }
                 }
-                catch (MySqlException Ex)
+                catch (MySqlException ex)
                 {
-                    HandleDatabaseError(Ex);
+                    HandleDatabaseError(ex);
                     textBox1.Text = "";
                     textBox2.Text = "";
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Неожиданная ошибка:\n" + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Ошибка:\n" + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     textBox1.Text = "";
                     textBox2.Text = "";
                 }
             }
         }
 
-        private void HandleDatabaseError(MySqlException ex)
+        private void CaptchaToImage()
         {
-            string errorMessage = "";
+            Random random = new Random();
+            string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            captchaText = "";
 
-            switch (ex.Number)
+            for (int i = 0; i < 5; i++)
             {
-                case 0:
-                    errorMessage = "Не удаётся подключиться к серверу базы данных.\n\nПроверьте:\n• Адрес хоста\n• Доступность сервера";
-                    break;
-
-                case 1045:
-                    errorMessage = "Ошибка доступа отклонена!\n\nПроверьте:\n• Имя пользователя\n• Пароль";
-                    break;
-
-                case 1049:
-                    errorMessage = "База данных не найдена!\n\nПроверьте имя базы данных в настройках.";
-                    break;
-
-                case 2003:
-                    errorMessage = "Не удаётся подключиться к MySQL серверу.\n\nПроверьте:\n• IP адрес хоста\n• Работает ли сервер MySQL";
-                    break;
-
-                case 2006:
-                    errorMessage = "MySQL сервер отключен.\n\nПожалуйста, проверьте состояние сервера.";
-                    break;
-
-                default:
-                    errorMessage = string.Format("Ошибка базы данных (код: {0}):\n{1}", ex.Number, ex.Message);
-                    break;
+                captchaText += chars[random.Next(chars.Length)];
             }
 
-            MessageBox.Show(errorMessage, "Ошибка подключения", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Bitmap bmp = new Bitmap(pictureBox4.Width, pictureBox4.Height);
+            Graphics g = Graphics.FromImage(bmp);
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.Clear(Color.White);
+            Font font = new Font("Arial", 20, FontStyle.Bold);
+
+            for (int i = 0; i < 5; i++)
+            {
+                var state = g.Save();
+                g.TranslateTransform(75, 60);
+                g.RotateTransform(random.Next(-10, 10));
+                g.DrawString(captchaText[i].ToString(), font, Brushes.Black, i * 20, 0);
+                g.Restore(state);
+            }
+
+            for (int i = 0; i < 10; i++)
+            {
+                Pen pen = new Pen(Color.Black, random.Next(2, 5));
+                g.DrawLine(pen, random.Next(pictureBox4.Width), random.Next(pictureBox4.Height),
+                random.Next(pictureBox4.Width), random.Next(pictureBox4.Height));
+            }
+
+            font.Dispose();
+            g.Dispose();
+            pictureBox4.Image = bmp;
+        }
+
+        private void ShowCaptcha()
+        {
+            pictureBox4.Visible = true;
+            textBox3.Visible = true;
+            pictureBox5.Visible = true;
+            label5.Visible = true;
+            label6.Visible = true;
+
+            if (this.Width != 895)
+            {
+                this.Width = 895;
+            }
+            if (pictureBox4.Image == null)
+            {
+                CaptchaToImage();
+            }
+        }
+
+        private void HideCaptcha()
+        {
+            pictureBox4.Visible = false;
+            textBox3.Visible = false;
+            pictureBox5.Visible = false;
+            label5.Visible = false;
+            label6.Visible = false;
+
+            if (this.Width != 660)
+            {
+                this.Width = 660;
+            }
+            textBox3.Clear();
+        }
+
+        private void pictureBox5_Click(object sender, EventArgs e)
+        {
+            CaptchaToImage();
+            textBox3.Clear();
+            textBox3.Focus();
+        }
+
+        private void StartLockout()
+        {
+            lockoutSeconds = 10;
+            button1.Enabled = false;
+            lockoutTimer.Start();
+        }
+
+        private void LockoutTimer_Tick(object sender, EventArgs e)
+        {
+            lockoutSeconds--;
+            button1.Text = "Вход (" + lockoutSeconds + " сек)";
+            if (lockoutSeconds <= 0)
+            {
+                lockoutTimer.Stop();
+                button1.Enabled = true;
+                button1.Text = "Вход";
+                failedAttempts = 0;
+                captchaRequired = false;
+                HideCaptcha();
+            }
+        }
+
+        private void HandleDatabaseError(MySqlException ex)
+        {
+            string msg = "";
+            if (ex.Number == 0)
+            {
+                msg = "Не удаётся подключиться к серверу базы данных.";
+            }
+            else if (ex.Number == 1045)
+            {
+                msg = "Ошибка доступа отклонена!";
+            }
+            else if (ex.Number == 1049)
+            {
+                msg = "База данных не найдена!";
+            }
+            else if (ex.Number == 2003)
+            {
+                msg = "Не удаётся подключиться к MySQL серверу.";
+            }
+            else if (ex.Number == 2006)
+            {
+                msg = "MySQL сервер отключен.";
+            }
+            else
+            {
+                msg = "Ошибка БД (код: " + ex.Number + "): " + ex.Message;
+            }
+
+            MessageBox.Show(msg, "Ошибка подключения", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            var result = MessageBox.Show("Вы действительно хотите выйти из приложения?", "Подтверждение", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
+            DialogResult result = MessageBox.Show("Вы действительно хотите выйти?", "Подтверждение", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (result == DialogResult.Yes)
             {
                 this.DialogResult = DialogResult.OK;
@@ -218,17 +351,27 @@ namespace WebSiteDev
             InputRest.EnglishDigitsAndSpecial(e);
         }
 
+        private void textBox3_KeyPress(object sender, KeyPressEventArgs e)
+        {
+
+        }
+
+        private void textBox3_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
         private string GetSha256(string text)
         {
             using (SHA256 sha = SHA256.Create())
             {
-                byte[] bytes = Encoding.UTF8.GetBytes(text);
-                byte[] hash = sha.ComputeHash(bytes);
+                byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes(text));
                 StringBuilder sb = new StringBuilder();
                 foreach (byte b in hash)
                 {
                     sb.Append(b.ToString("x2"));
                 }
+
                 return sb.ToString();
             }
         }
@@ -239,6 +382,10 @@ namespace WebSiteDev
             {
                 blockForms.UnregisterForm(this);
                 blockForms.Stop();
+            }
+            if (lockoutTimer != null)
+            {
+                lockoutTimer.Stop();
             }
         }
     }
