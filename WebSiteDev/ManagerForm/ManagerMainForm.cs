@@ -223,5 +223,10 @@ namespace WebSiteDev.ManagerForm
                 currentSelectedButton = selectedButton;
             }
         }
+
+        private void ManagerMainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+
+        }
     }
 }

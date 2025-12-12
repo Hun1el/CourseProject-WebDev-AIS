@@ -170,5 +170,10 @@ namespace WebSiteDev.ManagerForm
                 currentSelectedButton = selectedButton;
             }
         }
+
+        private void DirectorMainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+
+        }
     }
 }

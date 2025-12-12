@@ -249,5 +249,10 @@ namespace WebSiteDev
                 currentSelectedButton = selectedButton;
             }
         }
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+
+        }
     }
 }

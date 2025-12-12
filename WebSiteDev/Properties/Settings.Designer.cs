@@ -97,7 +97,7 @@ namespace WebSiteDev.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("30")]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
         public int InactivityTime {
             get {
                 return ((int)(this["InactivityTime"]));
