@@ -360,7 +360,6 @@ namespace WebSiteDev
         {
 
         }
-
         private string GetSha256(string text)
         {
             using (SHA256 sha = SHA256.Create())
